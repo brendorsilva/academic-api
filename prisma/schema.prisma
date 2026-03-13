@@ -1,0 +1,161 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model Institution {
+  id       String          @id @default(uuid())
+  name     String
+  cnpj     String          @unique
+  type     InstitutionType
+  isActive Boolean         @default(true)
+
+  students Student[]
+  users    User[]
+  teachers Teacher[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("institutions")
+}
+
+model Student {
+  id            String      @id @default(uuid())
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id])
+
+  // Dados Pessoais
+  fullName   String
+  cpf        String
+  rg         String
+  fatherName String?
+  motherName String
+  photoUrl   String?
+
+  // Endereço
+  state        String
+  city         String
+  neighborhood String
+  street       String
+  number       String
+  parish       String?
+
+  // Contato
+  email            String
+  phone            String
+  emergencyContact String
+
+  // Saúde e Restrições
+  allergies           String? @db.Text
+  dietaryRestrictions String? @db.Text
+
+  enrollmentNumber String?
+
+  createdAt DateTime @default(now())
+  updateAt  DateTime @updatedAt
+
+  @@unique([cpf, institutionId])
+  @@unique([email, institutionId])
+  @@unique([enrollmentNumber, institutionId])
+  @@map("students")
+}
+
+model User {
+  id       String @id @default(uuid())
+  name     String
+  email    String @unique
+  password String
+
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id])
+
+  createAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Teacher {
+  id            String   @id @default(uuid())
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id])
+
+  // Dados Pessoais
+  photoUrl      String?  // Será preenchido pelo Cloudinary
+  title         Title?   // Tratamento (Sr, Sra...)
+  fullName      String
+  gender        Gender
+  birthDate     DateTime @db.Date // Usamos @db.Date para salvar apenas a data, sem a hora
+  isActive      Boolean  @default(true) // Situação (Ativo/Inativo)
+
+  // Documentos
+  rg            String
+  cpf           String
+  ctpsNumber    String?  // Número da CTPS (opcional caso seja PJ)
+  ctpsSeries    String?  // Série da CTPS (opcional)
+  pis           String?  // PIS (opcional)
+
+  // Contato
+  phone         String
+  email         String
+
+  // Endereço
+  state         String   // UF
+  city          String
+  neighborhood  String   // Bairro
+  zipCode       String   // CEP
+  street        String   // Logradouro
+  number        String
+
+  // Acadêmico
+  qualification Qualification
+
+  // Filiação
+  fatherName    String?  // Opcional
+  motherName    String
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Regras Multi-tenant: O mesmo CPF/Email não pode repetir na MESMA instituição
+  @@unique([cpf, institutionId])
+  @@unique([email, institutionId])
+  
+  @@map("teachers")
+}
+
+enum InstitutionType {
+  SCHOOL
+  UNIVERSITY
+  COURSE
+}
+
+enum Title {
+  SR
+  SRA
+  PROF
+  DR
+  DRA
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum Qualification {
+  TITULATION       // Titulação
+  GRADUATION       // Graduação
+  SPECIALIZATION   // Especialização
+  MASTER           // Mestrado
+  DOCTORATE        // Doutorado
+}
