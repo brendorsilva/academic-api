@@ -10,8 +10,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 export class CreateStudentDto {
   @ApiProperty({ description: 'ID da instituição a qual o aluno pertence' })
   @IsUUID()
-  @IsNotEmpty()
-  institutionId: string;
+  @IsOptional()
+  institutionId?: string;
 
   @ApiProperty({ example: 'João Silva' })
   @IsString()
