@@ -36,7 +36,7 @@ export class StudentsService {
     }
 
     return this.prisma.student.create({
-      data: createStudentDto,
+      data: createStudentDto as any,
     });
   }
 
