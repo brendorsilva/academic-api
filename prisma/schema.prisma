@@ -133,6 +133,28 @@ model Teacher {
   @@map("teachers")
 }
 
+model Course {
+  id              String   @id @default(uuid())
+  institutionId   String
+  name            String
+  code            String
+  modality        Modality
+  level           Level
+  workload        Int      // Carga horária total
+  durationPeriods Int      // Duração em semestres/anos
+  isActive        Boolean  @default(true)
+  coordinatorId   String?  // Relacionamento opcional com Teacher (se já tiver o model Teacher, pode criar a relation)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Se já tiver os models abaixo, pode descomentar no futuro
+  // subjects        Subject[]
+  // classGroups     ClassGroup[]
+
+  @@map("courses")
+}
+
 enum InstitutionType {
   SCHOOL
   UNIVERSITY
@@ -158,4 +180,51 @@ enum Qualification {
   SPECIALIZATION   // Especialização
   MASTER           // Mestrado
   DOCTORATE        // Doutorado
+}
+
+enum Modality {
+  PRESENTIAL
+  EAD
+  HYBRID
+}
+
+enum Level {
+  BASIC
+  HIGH_SCHOOL
+  TECHNICAL
+  GRADUATION
+  POSTGRADUATION
+}
+
+enum SubType {
+  MANDATORY
+  OPTIONAL
+  ELECTIVE
+}
+
+enum PeriodStatus {
+  ENROLLMENT_OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum Shift {
+  MORNING
+  AFTERNOON
+  NIGHT
+  FULL_TIME
+}
+
+enum EnrolStatus {
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+  COMPLETED
+}
+
+enum SubjStatus {
+  STUDYING
+  APPROVED
+  FAILED
+  FAILED_BY_ABSENCE
 }

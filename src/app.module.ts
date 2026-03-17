@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { TeachersModule } from './teachers/teachers.module';
+import { CoursesModule } from './courses/courses.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { TeachersModule } from './teachers/teachers.module';
     AuthModule,
     CloudinaryModule,
     TeachersModule,
+    CoursesModule,
   ],
   controllers: [],
   providers: [],
