@@ -149,10 +149,29 @@ model Course {
   updatedAt       DateTime @updatedAt
 
   // Se já tiver os models abaixo, pode descomentar no futuro
-  // subjects        Subject[]
+  subjects        Subject[]
   // classGroups     ClassGroup[]
 
   @@map("courses")
+}
+
+model Subject {
+  id            String   @id @default(uuid())
+  institutionId String
+  courseId      String
+  name          String
+  code          String
+  syllabus      String?  @db.Text // Ementa da disciplina
+  workload      Int      // Carga horária
+  credits       Int      @default(0)
+  type          SubType  // Enum: MANDATORY, OPTIONAL, ELECTIVE
+  
+  course        Course   @relation(fields: [courseId], references: [id])
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("subjects")
 }
 
 enum InstitutionType {
