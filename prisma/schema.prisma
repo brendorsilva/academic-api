@@ -94,7 +94,7 @@ model Teacher {
   title         Title?   // Tratamento (Sr, Sra...)
   fullName      String
   gender        Gender
-  birthDate     DateTime @db.Date // Usamos @db.Date para salvar apenas a data, sem a hora
+  birthDate     DateTime @db.Date
   isActive      Boolean  @default(true) // Situação (Ativo/Inativo)
 
   // Documentos
@@ -143,14 +143,13 @@ model Course {
   workload        Int      // Carga horária total
   durationPeriods Int      // Duração em semestres/anos
   isActive        Boolean  @default(true)
-  coordinatorId   String?  // Relacionamento opcional com Teacher (se já tiver o model Teacher, pode criar a relation)
+  coordinatorId   String? 
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  // Se já tiver os models abaixo, pode descomentar no futuro
   subjects        Subject[]
-  // classGroups     ClassGroup[]
+  classGroups     ClassGroup[]
 
   @@map("courses")
 }
@@ -185,9 +184,30 @@ model AcademicPeriod {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
-  // classGroups   ClassGroup[] // Descomentaremos quando criarmos a tabela de Turmas
+  classGroups   ClassGroup[]  // Relacionamento com ClassGroup (1 para muitos)
 
   @@map("academic_periods")
+}
+
+model ClassGroup {
+  id              String   @id @default(uuid())
+  institutionId   String
+  courseId        String
+  periodId        String
+  name            String   // Ex: 1º Ano A, ENG-Noturno
+  shift           Shift    // MORNING, AFTERNOON, NIGHT, FULL_TIME
+  isActive        Boolean  @default(true)
+
+  course          Course         @relation(fields: [courseId], references: [id])
+  period          AcademicPeriod @relation(fields: [periodId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // classSubjects   ClassSubject[] 
+  // enrollments     Enrollment[]   
+
+  @@map("class_groups")
 }
 
 enum InstitutionType {

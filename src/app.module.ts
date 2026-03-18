@@ -10,6 +10,7 @@ import { TeachersModule } from './teachers/teachers.module';
 import { CoursesModule } from './courses/courses.module';
 import { SubjectsModule } from './subjects/subjects.module';
 import { AcademicPeriodsModule } from './academic-periods/academic-periods.module';
+import { ClassGroupsModule } from './class-groups/class-groups.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { AcademicPeriodsModule } from './academic-periods/academic-periods.modul
     CoursesModule,
     SubjectsModule,
     AcademicPeriodsModule,
+    ClassGroupsModule,
   ],
   controllers: [],
   providers: [],
