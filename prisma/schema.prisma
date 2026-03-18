@@ -167,6 +167,8 @@ model Subject {
   
   course        Course   @relation(fields: [courseId], references: [id])
   
+  classSubjects   ClassSubject[]
+  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -204,10 +206,29 @@ model ClassGroup {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  // classSubjects   ClassSubject[] 
+  classSubjects   ClassSubject[] 
   // enrollments     Enrollment[]   
 
   @@map("class_groups")
+}
+
+model ClassSubject {
+  id              String   @id @default(uuid())
+  institutionId   String
+  classGroupId    String
+  subjectId       String
+  teacherId       String?  // Relacionamento com o ID do Professor
+  room            String?  // Ex: "Sala 204", "Laboratório B"
+  totalSeats      Int      // Limite de alunos para esta matéria específica
+  occupiedSeats   Int      @default(0) // Controlado automaticamente pelo backend depois
+
+  classGroup      ClassGroup @relation(fields: [classGroupId], references: [id])
+  subject         Subject    @relation(fields: [subjectId], references: [id])
+  
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@map("class_subjects")
 }
 
 enum InstitutionType {
