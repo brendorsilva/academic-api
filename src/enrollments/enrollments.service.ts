@@ -91,7 +91,12 @@ export class EnrollmentsService {
       where: whereClause,
       include: {
         student: { select: { fullName: true, cpf: true } },
-        classGroup: { select: { name: true }, include: { period: true } },
+        classGroup: {
+          select: {
+            name: true,
+            period: true,
+          },
+        },
       },
       orderBy: { enrollmentDate: 'desc' },
     });
