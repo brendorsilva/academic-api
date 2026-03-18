@@ -9,6 +9,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { TeachersModule } from './teachers/teachers.module';
 import { CoursesModule } from './courses/courses.module';
 import { SubjectsModule } from './subjects/subjects.module';
+import { AcademicPeriodsModule } from './academic-periods/academic-periods.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { SubjectsModule } from './subjects/subjects.module';
     TeachersModule,
     CoursesModule,
     SubjectsModule,
+    AcademicPeriodsModule,
   ],
   controllers: [],
   providers: [],
