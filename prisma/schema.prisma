@@ -60,6 +60,8 @@ model Student {
 
   enrollmentNumber String?
 
+  enrollments Enrollment[]
+
   createdAt DateTime @default(now())
   updateAt  DateTime @updatedAt
 
@@ -166,7 +168,7 @@ model Subject {
   type          SubType  // Enum: MANDATORY, OPTIONAL, ELECTIVE
   
   course        Course   @relation(fields: [courseId], references: [id])
-  
+
   classSubjects   ClassSubject[]
   
   createdAt     DateTime @default(now())
@@ -207,7 +209,7 @@ model ClassGroup {
   updatedAt       DateTime @updatedAt
 
   classSubjects   ClassSubject[] 
-  // enrollments     Enrollment[]   
+  enrollments     Enrollment[]   
 
   @@map("class_groups")
 }
@@ -224,11 +226,53 @@ model ClassSubject {
 
   classGroup      ClassGroup @relation(fields: [classGroupId], references: [id])
   subject         Subject    @relation(fields: [subjectId], references: [id])
+  studentSubjects EnrollmentSubject[]
   
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
   @@map("class_subjects")
+}
+
+model Enrollment {
+  id              String   @id @default(uuid())
+  institutionId   String
+  studentId       String
+  classGroupId    String
+  enrollmentDate  DateTime @default(now())
+  status          EnrolStatus @default(ACTIVE)
+
+  student         Student      @relation(fields: [studentId], references: [id])
+  classGroup      ClassGroup   @relation(fields: [classGroupId], references: [id])
+  
+  subjects        EnrollmentSubject[] // As disciplinas que ele vai cursar
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("enrollments")
+}
+
+
+model EnrollmentSubject {
+  id              String   @id @default(uuid())
+  institutionId   String
+  enrollmentId    String
+  classSubjectId  String
+  status          SubjStatus @default(STUDYING)
+  finalGrade      Float?
+  finalAttendance Float?
+
+  enrollment      Enrollment   @relation(fields: [enrollmentId], references: [id])
+  classSubject    ClassSubject @relation(fields: [classSubjectId], references: [id])
+
+  // grades          Grade[]   
+  // attendances     Attendance[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("enrollment_subjects")
 }
 
 enum InstitutionType {

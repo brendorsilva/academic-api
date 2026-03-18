@@ -12,6 +12,7 @@ import { SubjectsModule } from './subjects/subjects.module';
 import { AcademicPeriodsModule } from './academic-periods/academic-periods.module';
 import { ClassGroupsModule } from './class-groups/class-groups.module';
 import { ClassSubjectsModule } from './class-subjects/class-subjects.module';
+import { EnrollmentsModule } from './enrollments/enrollments.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ClassSubjectsModule } from './class-subjects/class-subjects.module';
     AcademicPeriodsModule,
     ClassGroupsModule,
     ClassSubjectsModule,
+    EnrollmentsModule,
   ],
   controllers: [],
   providers: [],
