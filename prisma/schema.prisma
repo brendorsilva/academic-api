@@ -133,6 +133,7 @@ model Teacher {
   @@unique([email, institutionId])
   
   @@map("teachers")
+  classSubjects ClassSubject[]
 }
 
 model Course {
@@ -226,6 +227,7 @@ model ClassSubject {
 
   classGroup      ClassGroup @relation(fields: [classGroupId], references: [id])
   subject         Subject    @relation(fields: [subjectId], references: [id])
+  teacher         Teacher?   @relation(fields: [teacherId], references: [id])
   studentSubjects EnrollmentSubject[]
   
   createdAt       DateTime   @default(now())

@@ -47,6 +47,7 @@ export class ClassSubjectsService {
       include: {
         subject: { select: { name: true, workload: true } },
         classGroup: { select: { name: true } },
+        teacher: { select: { fullName: true } },
       },
     });
   }
