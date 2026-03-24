@@ -26,10 +26,13 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CurrentUser } from 'src/auth/current-user.decorator';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import type { FastifyRequest } from 'fastify';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { Roles } from 'src/auth/roles.decorator';
+import { Role } from '@prisma/client';
 
 @ApiTags('Students')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('students')
 export class StudentsController {
   constructor(
@@ -39,6 +42,7 @@ export class StudentsController {
 
   @Post()
   @ApiOperation({ summary: 'Regista um novo aluno' })
+  @Roles(Role.ADMIN, Role.COORDINATOR)
   create(@Body() createStudentDto: CreateStudentDto, @CurrentUser() user: any) {
     createStudentDto.institutionId = user.institutionId;
     return this.studentsService.create(createStudentDto);

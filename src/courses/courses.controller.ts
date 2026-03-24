@@ -14,16 +14,20 @@ import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { Roles } from 'src/auth/roles.decorator';
+import { Role } from '@prisma/client';
 
 @ApiTags('Courses')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('courses')
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}
 
   @Post()
   @ApiOperation({ summary: 'Criar um novo curso' })
+  @Roles(Role.ADMIN, Role.COORDINATOR)
   create(@Body() createCourseDto: CreateCourseDto, @CurrentUser() user: any) {
     createCourseDto.institutionId = user.institutionId;
     return this.coursesService.create(createCourseDto);
@@ -31,6 +35,7 @@ export class CoursesController {
 
   @Get()
   @ApiOperation({ summary: 'Listar todos os cursos da instituição' })
+  @Roles(Role.ADMIN, Role.COORDINATOR, Role.TEACHER)
   findAll(@CurrentUser() user: any) {
     return this.coursesService.findAll(user.institutionId);
   }

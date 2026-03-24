@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -12,7 +13,8 @@ export class ClassSubjectsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createClassSubjectDto: CreateClassSubjectDto) {
-    const { classGroupId, subjectId, institutionId } = createClassSubjectDto;
+    const { classGroupId, subjectId, institutionId, totalSeats } =
+      createClassSubjectDto;
 
     const [classGroup, subject] = await Promise.all([
       this.prisma.classGroup.findFirst({
@@ -32,8 +34,54 @@ export class ClassSubjectsService {
         'Disciplina inválida ou não pertence à instituição.',
       );
 
-    return this.prisma.classSubject.create({
-      data: createClassSubjectDto as any,
+    return this.prisma.$transaction(async (tx) => {
+      // Passo A: Cria a oferta da disciplina
+      const newClassSubject = await tx.classSubject.create({
+        data: createClassSubjectDto as any,
+      });
+
+      // Passo B: Busca os alunos que JÁ ESTÃO matriculados nessa Turma (Ex: o Brendo)
+      const existingEnrollments = await tx.enrollment.findMany({
+        where: {
+          classGroupId: classGroupId,
+          institutionId: institutionId,
+          status: 'ACTIVE', // Garante que pega apenas matrículas ativas
+        },
+      });
+
+      // Passo C: Se a turma já tiver alunos, matricula eles na nova disciplina automaticamente
+      if (existingEnrollments.length > 0) {
+        // Trava de segurança: Verifica se a sala comporta os alunos que já estão lá
+        if (totalSeats && existingEnrollments.length > totalSeats) {
+          throw new BadRequestException(
+            `A turma já possui ${existingEnrollments.length} alunos matriculados, o que excede o limite de ${totalSeats} vagas desta nova oferta.`,
+          );
+        }
+
+        // Prepara os dados para vincular todos os alunos de uma vez
+        const enrollmentsData = existingEnrollments.map((enrollment) => ({
+          institutionId: institutionId!,
+          enrollmentId: enrollment.id,
+          classSubjectId: newClassSubject.id,
+          status: 'STUDYING' as any,
+        }));
+
+        // Cria os vínculos (Isso é o que faz o aluno aparecer na tela do professor)
+        await tx.enrollmentSubject.createMany({
+          data: enrollmentsData,
+        });
+
+        // Atualiza as vagas ocupadas na nova disciplina para refletir a realidade
+        await tx.classSubject.update({
+          where: { id: newClassSubject.id },
+          data: { occupiedSeats: existingEnrollments.length },
+        });
+
+        // Atualiza o objeto de retorno
+        newClassSubject.occupiedSeats = existingEnrollments.length;
+      }
+
+      return newClassSubject;
     });
   }
 
@@ -54,12 +102,31 @@ export class ClassSubjectsService {
 
   async findOne(id: string, institutionId: string) {
     const classSubject = await this.prisma.classSubject.findFirst({
-      where: { id, institutionId },
-      include: { subject: true, classGroup: true },
+      where: {
+        id,
+        institutionId: institutionId,
+      },
+      include: {
+        subject: true,
+        classGroup: true,
+        teacher: true,
+        studentSubjects: {
+          include: {
+            enrollment: {
+              include: {
+                student: true, // Traz o nome e os dados do aluno
+              },
+            },
+            grades: true, // Traz as notas já lançadas para o boletim
+          },
+        },
+      },
     });
 
-    if (!classSubject)
+    if (!classSubject) {
       throw new NotFoundException('Oferta de disciplina não encontrada.');
+    }
+
     return classSubject;
   }
 

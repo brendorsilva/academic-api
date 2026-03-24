@@ -33,10 +33,23 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       institutionId: user.institutionId,
+      role: user.role,
+      teacherId: user.teacherId,
+      studentId: user.studentId,
+      mustChangePassword: user.mustChangePassword,
     };
 
     return {
       access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        email: user.email,
+        institutionId: user.institutionId,
+        role: user.role,
+        teacherId: user.teacherId,
+        studentId: user.studentId,
+        mustChangePassword: user.mustChangePassword,
+      },
     };
   }
 }

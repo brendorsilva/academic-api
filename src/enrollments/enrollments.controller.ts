@@ -18,6 +18,8 @@ import { EnrollmentsService } from './enrollments.service';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { Roles } from 'src/auth/roles.decorator';
+import { Role } from '@prisma/client';
 
 @ApiTags('Enrollments (Matrículas)')
 @ApiBearerAuth()
@@ -27,31 +29,22 @@ export class EnrollmentsController {
   constructor(private readonly enrollmentsService: EnrollmentsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Realizar matrícula de um Aluno numa Turma' })
+  @Roles(Role.ADMIN, Role.COORDINATOR)
   create(
     @Body() createEnrollmentDto: CreateEnrollmentDto,
     @CurrentUser() user: any,
   ) {
-    createEnrollmentDto.institutionId = user.institutionId;
-    return this.enrollmentsService.create(createEnrollmentDto);
+    return this.enrollmentsService.create(createEnrollmentDto, user);
   }
 
   @Get()
-  @ApiOperation({
-    summary: 'Listar matrículas (Filtros opcionais por Turma ou Aluno)',
-  })
-  @ApiQuery({ name: 'classGroupId', required: false })
-  @ApiQuery({ name: 'studentId', required: false })
+  @Roles(Role.ADMIN, Role.COORDINATOR, Role.STUDENT)
   findAll(
     @CurrentUser() user: any,
     @Query('classGroupId') classGroupId?: string,
     @Query('studentId') studentId?: string,
   ) {
-    return this.enrollmentsService.findAll(
-      user.institutionId,
-      classGroupId,
-      studentId,
-    );
+    return this.enrollmentsService.findAll(user, classGroupId, studentId);
   }
 
   @Get(':id')

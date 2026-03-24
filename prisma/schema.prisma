@@ -60,6 +60,8 @@ model Student {
 
   enrollmentNumber String?
 
+  user        User?
+
   enrollments Enrollment[]
 
   createdAt DateTime @default(now())
@@ -76,10 +78,21 @@ model User {
   name     String
   email    String @unique
   password String
+  role     Role @default(ADMIN)
 
   institutionId String
   institution   Institution @relation(fields: [institutionId], references: [id])
 
+  teacherId     String?  @unique
+  teacher       Teacher? @relation(fields: [teacherId], references: [id])
+
+  studentId     String?  @unique
+  student       Student? @relation(fields: [studentId], references: [id])
+
+  auditLogs     GradeAuditLog[]
+  
+  mustChangePassword Boolean @default(false)
+  
   createAt  DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -124,6 +137,8 @@ model Teacher {
   // Filiação
   fatherName    String?  // Opcional
   motherName    String
+
+  user         User?
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -225,6 +240,8 @@ model ClassSubject {
   totalSeats      Int      // Limite de alunos para esta matéria específica
   occupiedSeats   Int      @default(0) // Controlado automaticamente pelo backend depois
 
+  diaries        ClassDiary[]
+
   classGroup      ClassGroup @relation(fields: [classGroupId], references: [id])
   subject         Subject    @relation(fields: [subjectId], references: [id])
   teacher         Teacher?   @relation(fields: [teacherId], references: [id])
@@ -265,6 +282,9 @@ model EnrollmentSubject {
   finalGrade      Float?
   finalAttendance Float?
 
+  grades          Grade[]
+  attendances     Attendance[]
+
   enrollment      Enrollment   @relation(fields: [enrollmentId], references: [id])
   classSubject    ClassSubject @relation(fields: [classSubjectId], references: [id])
 
@@ -275,6 +295,81 @@ model EnrollmentSubject {
   updatedAt       DateTime @updatedAt
 
   @@map("enrollment_subjects")
+}
+
+model ClassDiary {
+  id             String       @id @default(uuid())
+  institutionId  String
+  classSubjectId String
+  date           DateTime     @db.Date
+  content        String       @db.Text // O que foi ensinado no dia
+
+  classSubject   ClassSubject @relation(fields: [classSubjectId], references: [id])
+  attendances    Attendance[]
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@map("class_diaries")
+}
+
+model Attendance {
+  id                  String            @id @default(uuid())
+  institutionId       String
+  classDiaryId        String
+  enrollmentSubjectId String
+  isPresent           Boolean           @default(true)
+  justification       String?           @db.Text // Caso falte e traga atestado
+
+  classDiary          ClassDiary        @relation(fields: [classDiaryId], references: [id])
+  enrollmentSubject   EnrollmentSubject @relation(fields: [enrollmentSubjectId], references: [id])
+
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  // Garante que o mesmo aluno não tenha duas marcações no mesmo dia/diário
+  @@unique([classDiaryId, enrollmentSubjectId]) 
+  @@map("attendances")
+}
+
+// ==========================================
+// MÓDULO DE NOTAS E AUDITORIA (COMPROVANTE)
+// ==========================================
+
+model Grade {
+  id                  String            @id @default(uuid())
+  institutionId       String
+  enrollmentSubjectId String
+  name                String            // Ex: "Prova Bimestral", "Trabalho"
+  value               Float             // O valor da nota em si
+  weight              Float             @default(1.0) // Peso da nota na média
+  date                DateTime          @db.Date
+
+  enrollmentSubject   EnrollmentSubject @relation(fields: [enrollmentSubjectId], references: [id])
+  auditLogs           GradeAuditLog[]
+
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@map("grades")
+}
+
+model GradeAuditLog {
+  id            String      @id @default(uuid())
+  institutionId String
+  gradeId       String?     // Pode ficar null se a nota for deletada
+  userId        String      // O ID do usuário logado (Professor ou Diretor) que fez a ação
+  action        AuditAction // CREATED, UPDATED, DELETED
+  oldValue      Float?      // Nota antes da alteração
+  newValue      Float?      // Nota depois da alteração
+  reason        String?     @db.Text // Justificativa opcional para alterar a nota
+
+  grade         Grade?      @relation(fields: [gradeId], references: [id], onDelete: SetNull)
+  user          User        @relation(fields: [userId], references: [id])
+
+  createdAt     DateTime    @default(now())
+
+  @@map("grade_audit_logs")
 }
 
 enum InstitutionType {
@@ -349,4 +444,17 @@ enum SubjStatus {
   APPROVED
   FAILED
   FAILED_BY_ABSENCE
+}
+
+enum Role {
+  ADMIN
+  COORDINATOR
+  TEACHER
+  STUDENT
+}
+
+enum AuditAction {
+  CREATED
+  UPDATED
+  DELETED
 }
