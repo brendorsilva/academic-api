@@ -1,0 +1,33 @@
+# Dependências
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Build e Saída
+dist
+build
+.next
+.nuxt
+
+# Variáveis de Ambiente e Segredos
+.env
+.env.production
+.env.local
+.env.test
+
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Git
+.git
+.gitignore
+
+# Outros / IDEs
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+README.md
+LICENSE

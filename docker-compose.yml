@@ -1,0 +1,38 @@
+services:
+  # Container do Banco de Dados
+  db:
+    image: mysql:8.0
+    container_name: academy_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: AcademycuS@142536
+      MYSQL_DATABASE: academy_db
+    ports:
+      - '127.0.0.1:3306:3306' # Só aceita conexões locais para maior segurança
+    volumes:
+      - mysql_production_data:/var/lib/mysql # AQUI os dados ficam salvos na VPS
+
+  # Container da sua API NestJS
+  api:
+    build: .
+    container_name: academy_api
+    restart: always
+    ports:
+      - '3000:3000'
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: 'mysql://root:AcademycuS@142536@db:3306/academy_db'
+      DATABASE_HOST: db
+      DATABASE_PORT: 3306
+      DATABASE_USER: root
+      DATABASE_PASSWORD: AcademycuS@142536
+      DATABASE_NAME: academy_db
+      PORT: 3000
+      JWT_SECRET: 'W7arHQd9mp3ZZGRR8jiZIlY1PQUrU42l0nI6lWjwvOj'
+      CLAUDINARY_NAME: dxqmw0oqx
+      CLAUDINARY_KEY: 396189426983549
+      CLAUDINARY_API_SECRET: f6P6Pyy-zTR6HYqUL3tUriIqU1M
+
+volumes:
+  mysql_production_data: # Nome do volume persistente
