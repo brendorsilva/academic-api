@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
 import { CreateUserAccessDto } from './dto/create-user-access.dto';
+import { CreateCoordinatorDto } from './dto/create-coordinator.dto';
 
 @Injectable()
 export class UsersService {
@@ -115,10 +116,61 @@ export class UsersService {
         email: true,
         name: true,
         role: true,
-      }, // Não devolve a senha hashada por segurança
+      },
     });
 
     return newUser;
+  }
+
+  async listCoordinators(currentUser: any) {
+    return this.prisma.user.findMany({
+      where: {
+        institutionId: currentUser.institutionId,
+        role: 'COORDINATOR',
+      },
+      select: { id: true, name: true, email: true },
+    });
+  }
+
+  async createCoordinator(dto: CreateCoordinatorDto, currentUser: any) {
+    const { name, email, password } = dto;
+
+    const institutionId = currentUser.institutionId;
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      throw new ConflictException(
+        'Este e-mail já está em uso por outro utilizador.',
+      );
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newCoordinator = await this.prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role: 'COORDINATOR',
+        institutionId: institutionId,
+        mustChangePassword: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+    });
+
+    return {
+      message: 'Coordenador criado com sucesso!',
+      user: newCoordinator,
+    };
   }
 
   async updatePassword(userId: string, newPassword: string) {

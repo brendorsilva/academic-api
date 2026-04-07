@@ -92,6 +92,8 @@ model User {
   auditLogs     GradeAuditLog[]
   
   mustChangePassword Boolean @default(false)
+
+  coordinatedCourses Course[] @relation("CourseCoordinator")
   
   createAt  DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -161,7 +163,9 @@ model Course {
   workload        Int      // Carga horária total
   durationPeriods Int      // Duração em semestres/anos
   isActive        Boolean  @default(true)
-  coordinatorId   String? 
+  
+  coordinatorId   String?
+  coordinator     User? @relation("CourseCoordinator", fields: [coordinatorId], references: [id])
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

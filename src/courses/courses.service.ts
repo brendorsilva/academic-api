@@ -7,36 +7,61 @@ import { PrismaService } from '../prisma/prisma.service';
 export class CoursesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createCourseDto: CreateCourseDto) {
+  async create(createCourseDto: CreateCourseDto, currentUser: any) {
+    const data: any = {
+      ...createCourseDto,
+      institutionId: currentUser.institutionId,
+    };
+
+    if (currentUser.role === 'COORDINATOR') {
+      data.coordinatorId = currentUser.userId;
+    }
+
     return this.prisma.course.create({
-      data: createCourseDto as any,
+      data,
     });
   }
 
-  async findAll(institutionId: string) {
+  async findAll(currentUser: any) {
+    const whereClause: any = { institutionId: currentUser.institutionId };
+
+    if (currentUser.role === 'COORDINATOR') {
+      whereClause.coordinatorId = currentUser.userId;
+    }
+
     return this.prisma.course.findMany({
-      where: { institutionId },
+      where: whereClause,
+      include: {
+        coordinator: { select: { id: true, name: true } },
+      },
       orderBy: { name: 'asc' },
     });
   }
 
-  async findOne(id: string, institutionId: string) {
+  async findOne(id: string, currentUser: any) {
+    const whereClause: any = { id, institutionId: currentUser.institutionId };
+
+    if (currentUser.role === 'COORDINATOR') {
+      whereClause.coordinatorId = currentUser.userId;
+    }
+
     const course = await this.prisma.course.findFirst({
-      where: { id, institutionId },
+      where: whereClause,
+      include: {
+        coordinator: { select: { id: true, name: true } },
+      },
     });
 
     if (!course) {
-      throw new NotFoundException('Curso não encontrado');
+      throw new NotFoundException(
+        'Curso não encontrado ou sem permissão de acesso',
+      );
     }
     return course;
   }
 
-  async update(
-    id: string,
-    updateCourseDto: UpdateCourseDto,
-    institutionId: string,
-  ) {
-    await this.findOne(id, institutionId);
+  async update(id: string, updateCourseDto: UpdateCourseDto, currentUser: any) {
+    await this.findOne(id, currentUser);
 
     return this.prisma.course.update({
       where: { id },
@@ -44,8 +69,8 @@ export class CoursesService {
     });
   }
 
-  async remove(id: string, institutionId: string) {
-    await this.findOne(id, institutionId);
+  async remove(id: string, currentUser: any) {
+    await this.findOne(id, currentUser);
 
     return this.prisma.course.delete({
       where: { id },

@@ -35,7 +35,7 @@ export class ClassGroupsController {
     @CurrentUser() user: any,
   ) {
     createClassGroupDto.institutionId = user.institutionId;
-    return this.classGroupsService.create(createClassGroupDto);
+    return this.classGroupsService.create(createClassGroupDto, user);
   }
 
   @Get()
@@ -47,17 +47,13 @@ export class ClassGroupsController {
     @Query('courseId') courseId?: string,
     @Query('periodId') periodId?: string,
   ) {
-    return this.classGroupsService.findAll(
-      user.institutionId,
-      courseId,
-      periodId,
-    );
+    return this.classGroupsService.findAll(user, courseId, periodId);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Procurar uma turma específica' })
   findOne(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.classGroupsService.findOne(id, user.institutionId);
+    return this.classGroupsService.findOne(id, user);
   }
 
   @Patch(':id')
@@ -68,16 +64,12 @@ export class ClassGroupsController {
     @CurrentUser() user: any,
   ) {
     delete updateClassGroupDto.institutionId;
-    return this.classGroupsService.update(
-      id,
-      updateClassGroupDto,
-      user.institutionId,
-    );
+    return this.classGroupsService.update(id, updateClassGroupDto, user);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Excluir uma turma' })
   remove(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.classGroupsService.remove(id, user.institutionId);
+    return this.classGroupsService.remove(id, user);
   }
 }

@@ -50,7 +50,7 @@ export class EnrollmentsController {
   @Get(':id')
   @ApiOperation({ summary: 'Detalhes completos de uma Matrícula' })
   findOne(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.enrollmentsService.findOne(id, user.institutionId);
+    return this.enrollmentsService.findOne(id, user);
   }
 
   @Delete(':id')
@@ -58,6 +58,6 @@ export class EnrollmentsController {
     summary: 'Cancelar/Excluir Matrícula (Apenas para correção de erros)',
   })
   remove(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.enrollmentsService.remove(id, user.institutionId);
+    return this.enrollmentsService.remove(id, user);
   }
 }

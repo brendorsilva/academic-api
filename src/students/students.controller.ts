@@ -44,20 +44,19 @@ export class StudentsController {
   @ApiOperation({ summary: 'Regista um novo aluno' })
   @Roles(Role.ADMIN, Role.COORDINATOR)
   create(@Body() createStudentDto: CreateStudentDto, @CurrentUser() user: any) {
-    createStudentDto.institutionId = user.institutionId;
-    return this.studentsService.create(createStudentDto);
+    return this.studentsService.create(createStudentDto, user);
   }
 
   @Get()
   @ApiOperation({ summary: 'Lista todos os alunos da instituição' })
   findAll(@CurrentUser() user: any) {
-    return this.studentsService.findAll(user.institutionId);
+    return this.studentsService.findAll(user);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtém os detalhes de um aluno específico' })
   findOne(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.studentsService.findOne(id, user.institutionId);
+    return this.studentsService.findOne(id, user);
   }
 
   @Patch(':id')
@@ -67,22 +66,17 @@ export class StudentsController {
     @CurrentUser() user: any,
     @Body() updateStudentDto: UpdateStudentDto,
   ) {
-    return this.studentsService.update(
-      id,
-      user.institutionId,
-      updateStudentDto,
-    );
+    return this.studentsService.update(id, updateStudentDto, user);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Remove o registo de um aluno' })
   remove(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.studentsService.remove(id, user.institutionId);
+    return this.studentsService.remove(id, user);
   }
 
   @Post(':id/photo')
   @ApiOperation({ summary: 'Faz o upload da foto do aluno' })
-  // Decorators para o Swagger entender que é um upload de arquivo
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -100,20 +94,17 @@ export class StudentsController {
     @CurrentUser() user: any,
     @Req() req: FastifyRequest,
   ) {
-    // 1. Verifica se a requisição é multipart
     if (!req.isMultipart()) {
       throw new BadRequestException(
         'A requisição deve ser multipart/form-data',
       );
     }
 
-    // 2. Extrai o arquivo da requisição do Fastify
     const data = await req.file();
     if (!data) {
       throw new BadRequestException('Nenhum arquivo enviado');
     }
 
-    // 3. Converte para Buffer
     const buffer = await data.toBuffer();
 
     try {
@@ -123,11 +114,7 @@ export class StudentsController {
         'students',
       );
 
-      return this.studentsService.updatePhotoUrl(
-        id,
-        user.institutionId,
-        result.secure_url,
-      );
+      return this.studentsService.updatePhotoUrl(id, result.secure_url, user);
     } catch (error) {
       throw new BadRequestException('Falha ao processar o upload da imagem');
     }

@@ -11,11 +11,17 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ClassGroupsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createClassGroupDto: CreateClassGroupDto) {
-    const { courseId, periodId, institutionId } = createClassGroupDto;
+  async create(createClassGroupDto: CreateClassGroupDto, currentUser: any) {
+    const { courseId, periodId } = createClassGroupDto;
+    const institutionId = currentUser.institutionId;
+
+    const courseWhere: any = { id: courseId, institutionId };
+    if (currentUser.role === 'COORDINATOR') {
+      courseWhere.coordinatorId = currentUser.userId;
+    }
 
     const [course, period] = await Promise.all([
-      this.prisma.course.findFirst({ where: { id: courseId, institutionId } }),
+      this.prisma.course.findFirst({ where: courseWhere }),
       this.prisma.academicPeriod.findFirst({
         where: { id: periodId, institutionId },
       }),
@@ -23,7 +29,7 @@ export class ClassGroupsService {
 
     if (!course)
       throw new UnauthorizedException(
-        'Curso inválido ou não pertence à instituição.',
+        'Curso inválido ou você não tem permissão para gerenciar turmas deste curso.',
       );
     if (!period)
       throw new UnauthorizedException(
@@ -31,15 +37,24 @@ export class ClassGroupsService {
       );
 
     return this.prisma.classGroup.create({
-      data: createClassGroupDto as any,
+      data: {
+        ...createClassGroupDto,
+        institutionId,
+      } as any,
     });
   }
 
-  async findAll(institutionId: string, courseId?: string, periodId?: string) {
-    const whereClause: any = { institutionId };
+  async findAll(currentUser: any, courseId?: string, periodId?: string) {
+    const whereClause: any = { institutionId: currentUser.institutionId };
 
     if (courseId) whereClause.courseId = courseId;
     if (periodId) whereClause.periodId = periodId;
+
+    if (currentUser.role === 'COORDINATOR') {
+      whereClause.course = {
+        coordinatorId: currentUser.userId,
+      };
+    }
 
     return this.prisma.classGroup.findMany({
       where: whereClause,
@@ -51,22 +66,34 @@ export class ClassGroupsService {
     });
   }
 
-  async findOne(id: string, institutionId: string) {
+  async findOne(id: string, currentUser: any) {
+    const whereClause: any = {
+      id,
+      institutionId: currentUser.institutionId,
+    };
+
+    if (currentUser.role === 'COORDINATOR') {
+      whereClause.course = { coordinatorId: currentUser.userId };
+    }
+
     const classGroup = await this.prisma.classGroup.findFirst({
-      where: { id, institutionId },
+      where: whereClause,
       include: { course: true, period: true },
     });
 
-    if (!classGroup) throw new NotFoundException('Turma não encontrada.');
+    if (!classGroup)
+      throw new NotFoundException(
+        'Turma não encontrada ou sem permissão de acesso.',
+      );
     return classGroup;
   }
 
   async update(
     id: string,
     updateClassGroupDto: UpdateClassGroupDto,
-    institutionId: string,
+    currentUser: any,
   ) {
-    await this.findOne(id, institutionId);
+    await this.findOne(id, currentUser);
 
     return this.prisma.classGroup.update({
       where: { id },
@@ -74,8 +101,9 @@ export class ClassGroupsService {
     });
   }
 
-  async remove(id: string, institutionId: string) {
-    await this.findOne(id, institutionId);
+  async remove(id: string, currentUser: any) {
+    await this.findOne(id, currentUser);
+
     return this.prisma.classGroup.delete({ where: { id } });
   }
 }

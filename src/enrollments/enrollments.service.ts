@@ -14,21 +14,28 @@ export class EnrollmentsService {
 
   async create(createEnrollmentDto: CreateEnrollmentDto, user: any) {
     const { studentId, classGroupId, classSubjectIds } = createEnrollmentDto;
-    const institutionId = user.institutionId; // Usa sempre a instituição do usuário logado
+    const institutionId = user.institutionId;
+
+    const classGroupWhere: any = { id: classGroupId, institutionId };
+    if (user.role === 'COORDINATOR') {
+      classGroupWhere.course = { coordinatorId: user.userId };
+    }
 
     const [student, classGroup] = await Promise.all([
       this.prisma.student.findFirst({
         where: { id: studentId, institutionId },
       }),
       this.prisma.classGroup.findFirst({
-        where: { id: classGroupId, institutionId },
+        where: classGroupWhere,
       }),
     ]);
 
     if (!student) throw new UnauthorizedException('Aluno não encontrado.');
-    if (!classGroup) throw new UnauthorizedException('Turma não encontrada.');
+    if (!classGroup)
+      throw new UnauthorizedException(
+        'Turma não encontrada ou você não tem permissão para acessá-la.',
+      );
 
-    // 1. Define as disciplinas a matricular
     let subjectsToEnroll = classSubjectIds;
 
     if (!subjectsToEnroll || subjectsToEnroll.length === 0) {
@@ -44,7 +51,6 @@ export class EnrollmentsService {
       subjectsToEnroll = classSubjects.map((cs) => cs.id);
     }
 
-    // 2. Valida se as disciplinas existem e se há vagas
     const validSubjects = await this.prisma.classSubject.findMany({
       where: { id: { in: subjectsToEnroll }, classGroupId, institutionId },
     });
@@ -63,9 +69,7 @@ export class EnrollmentsService {
       }
     }
 
-    // 3. Executa a matrícula e incrementa as vagas em uma transação segura
     return this.prisma.$transaction(async (tx) => {
-      // Cria a matrícula e vincula as disciplinas
       const enrollment = await tx.enrollment.create({
         data: {
           institutionId,
@@ -87,7 +91,6 @@ export class EnrollmentsService {
         },
       });
 
-      // Incrementa os assentos ocupados nas ofertas de disciplina
       await tx.classSubject.updateMany({
         where: { id: { in: subjectsToEnroll }, institutionId },
         data: { occupiedSeats: { increment: 1 } },
@@ -100,7 +103,6 @@ export class EnrollmentsService {
   async findAll(user: any, classGroupId?: string, studentId?: string) {
     const whereClause: any = { institutionId: user.institutionId };
 
-    // Regra de RBAC: Se for aluno, só pode ver as próprias matrículas
     if (user.role === 'STUDENT') {
       whereClause.studentId = user.studentId;
     } else if (studentId) {
@@ -108,6 +110,12 @@ export class EnrollmentsService {
     }
 
     if (classGroupId) whereClause.classGroupId = classGroupId;
+
+    if (user.role === 'COORDINATOR') {
+      whereClause.classGroup = {
+        course: { coordinatorId: user.userId },
+      };
+    }
 
     return this.prisma.enrollment.findMany({
       where: whereClause,
@@ -125,8 +133,16 @@ export class EnrollmentsService {
   }
 
   async findOne(id: string, user: any) {
+    const whereClause: any = { id, institutionId: user.institutionId };
+
+    if (user.role === 'COORDINATOR') {
+      whereClause.classGroup = {
+        course: { coordinatorId: user.userId },
+      };
+    }
+
     const enrollment = await this.prisma.enrollment.findFirst({
-      where: { id, institutionId: user.institutionId },
+      where: whereClause,
       include: {
         student: true,
         classGroup: { include: { course: true, period: true } },
@@ -138,9 +154,11 @@ export class EnrollmentsService {
       },
     });
 
-    if (!enrollment) throw new NotFoundException('Matrícula não encontrada.');
+    if (!enrollment)
+      throw new NotFoundException(
+        'Matrícula não encontrada ou sem permissão de acesso.',
+      );
 
-    // Impede que um aluno acesse a matrícula de outro pela URL
     if (user.role === 'STUDENT' && enrollment.studentId !== user.studentId) {
       throw new ForbiddenException('Acesso negado a esta matrícula.');
     }
@@ -153,17 +171,13 @@ export class EnrollmentsService {
 
     const subjectIdsToFree = enrollment.subjects.map((s) => s.classSubjectId);
 
-    // Usa transação para remover a matrícula e devolver as vagas
     return this.prisma.$transaction(async (tx) => {
-      // 1. Remove as disciplinas do aluno
       await tx.enrollmentSubject.deleteMany({
         where: { enrollmentId: id },
       });
 
-      // 2. Remove a matrícula principal
       await tx.enrollment.delete({ where: { id } });
 
-      // 3. Libera as vagas devolvendo-as para a turma
       if (subjectIdsToFree.length > 0) {
         await tx.classSubject.updateMany({
           where: {

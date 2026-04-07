@@ -29,21 +29,20 @@ export class CoursesController {
   @ApiOperation({ summary: 'Criar um novo curso' })
   @Roles(Role.ADMIN, Role.COORDINATOR)
   create(@Body() createCourseDto: CreateCourseDto, @CurrentUser() user: any) {
-    createCourseDto.institutionId = user.institutionId;
-    return this.coursesService.create(createCourseDto);
+    return this.coursesService.create(createCourseDto, user);
   }
 
   @Get()
   @ApiOperation({ summary: 'Listar todos os cursos da instituição' })
   @Roles(Role.ADMIN, Role.COORDINATOR, Role.TEACHER)
   findAll(@CurrentUser() user: any) {
-    return this.coursesService.findAll(user.institutionId);
+    return this.coursesService.findAll(user);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Procurar um curso específico pelo ID' })
   findOne(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.coursesService.findOne(id, user.institutionId);
+    return this.coursesService.findOne(id, user);
   }
 
   @Patch(':id')
@@ -53,13 +52,13 @@ export class CoursesController {
     @Body() updateCourseDto: UpdateCourseDto,
     @CurrentUser() user: any,
   ) {
-    delete updateCourseDto.institutionId;
-    return this.coursesService.update(id, updateCourseDto, user.institutionId);
+    delete (updateCourseDto as any).institutionId;
+    return this.coursesService.update(id, updateCourseDto, user);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Excluir um curso' })
   remove(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.coursesService.remove(id, user.institutionId);
+    return this.coursesService.remove(id, user);
   }
 }

@@ -12,72 +12,71 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ClassSubjectsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createClassSubjectDto: CreateClassSubjectDto) {
-    const { classGroupId, subjectId, institutionId, totalSeats } =
-      createClassSubjectDto;
+  async create(createClassSubjectDto: CreateClassSubjectDto, currentUser: any) {
+    const { classGroupId, subjectId, totalSeats } = createClassSubjectDto;
+    const institutionId = currentUser.institutionId;
+
+    const classGroupWhere: any = { id: classGroupId, institutionId };
+    const subjectWhere: any = { id: subjectId, institutionId };
+
+    if (currentUser.role === 'COORDINATOR') {
+      classGroupWhere.course = { coordinatorId: currentUser.userId };
+      subjectWhere.course = { coordinatorId: currentUser.userId };
+    }
 
     const [classGroup, subject] = await Promise.all([
-      this.prisma.classGroup.findFirst({
-        where: { id: classGroupId, institutionId },
-      }),
-      this.prisma.subject.findFirst({
-        where: { id: subjectId, institutionId },
-      }),
+      this.prisma.classGroup.findFirst({ where: classGroupWhere }),
+      this.prisma.subject.findFirst({ where: subjectWhere }),
     ]);
 
     if (!classGroup)
       throw new UnauthorizedException(
-        'Turma inválida ou não pertence à instituição.',
+        'Turma inválida, não pertence à instituição ou você não tem permissão para acessá-la.',
       );
     if (!subject)
       throw new UnauthorizedException(
-        'Disciplina inválida ou não pertence à instituição.',
+        'Disciplina inválida, não pertence à instituição ou você não tem permissão para acessá-la.',
       );
 
     return this.prisma.$transaction(async (tx) => {
-      // Passo A: Cria a oferta da disciplina
       const newClassSubject = await tx.classSubject.create({
-        data: createClassSubjectDto as any,
+        data: {
+          ...createClassSubjectDto,
+          institutionId,
+        } as any,
       });
 
-      // Passo B: Busca os alunos que JÁ ESTÃO matriculados nessa Turma (Ex: o Brendo)
       const existingEnrollments = await tx.enrollment.findMany({
         where: {
           classGroupId: classGroupId,
           institutionId: institutionId,
-          status: 'ACTIVE', // Garante que pega apenas matrículas ativas
+          status: 'ACTIVE',
         },
       });
 
-      // Passo C: Se a turma já tiver alunos, matricula eles na nova disciplina automaticamente
       if (existingEnrollments.length > 0) {
-        // Trava de segurança: Verifica se a sala comporta os alunos que já estão lá
         if (totalSeats && existingEnrollments.length > totalSeats) {
           throw new BadRequestException(
             `A turma já possui ${existingEnrollments.length} alunos matriculados, o que excede o limite de ${totalSeats} vagas desta nova oferta.`,
           );
         }
 
-        // Prepara os dados para vincular todos os alunos de uma vez
         const enrollmentsData = existingEnrollments.map((enrollment) => ({
-          institutionId: institutionId!,
+          institutionId: institutionId,
           enrollmentId: enrollment.id,
           classSubjectId: newClassSubject.id,
           status: 'STUDYING' as any,
         }));
 
-        // Cria os vínculos (Isso é o que faz o aluno aparecer na tela do professor)
         await tx.enrollmentSubject.createMany({
           data: enrollmentsData,
         });
 
-        // Atualiza as vagas ocupadas na nova disciplina para refletir a realidade
         await tx.classSubject.update({
           where: { id: newClassSubject.id },
           data: { occupiedSeats: existingEnrollments.length },
         });
 
-        // Atualiza o objeto de retorno
         newClassSubject.occupiedSeats = existingEnrollments.length;
       }
 
@@ -85,10 +84,16 @@ export class ClassSubjectsService {
     });
   }
 
-  async findAll(institutionId: string, classGroupId?: string) {
-    const whereClause: any = { institutionId };
+  async findAll(currentUser: any, classGroupId?: string) {
+    const whereClause: any = { institutionId: currentUser.institutionId };
 
     if (classGroupId) whereClause.classGroupId = classGroupId;
+
+    if (currentUser.role === 'COORDINATOR') {
+      whereClause.classGroup = {
+        course: { coordinatorId: currentUser.userId },
+      };
+    }
 
     return this.prisma.classSubject.findMany({
       where: whereClause,
@@ -100,12 +105,20 @@ export class ClassSubjectsService {
     });
   }
 
-  async findOne(id: string, institutionId: string) {
+  async findOne(id: string, currentUser: any) {
+    const whereClause: any = {
+      id,
+      institutionId: currentUser.institutionId,
+    };
+
+    if (currentUser.role === 'COORDINATOR') {
+      whereClause.classGroup = {
+        course: { coordinatorId: currentUser.userId },
+      };
+    }
+
     const classSubject = await this.prisma.classSubject.findFirst({
-      where: {
-        id,
-        institutionId: institutionId,
-      },
+      where: whereClause,
       include: {
         subject: true,
         classGroup: true,
@@ -114,17 +127,19 @@ export class ClassSubjectsService {
           include: {
             enrollment: {
               include: {
-                student: true, // Traz o nome e os dados do aluno
+                student: true,
               },
             },
-            grades: true, // Traz as notas já lançadas para o boletim
+            grades: true,
           },
         },
       },
     });
 
     if (!classSubject) {
-      throw new NotFoundException('Oferta de disciplina não encontrada.');
+      throw new NotFoundException(
+        'Oferta de disciplina não encontrada ou sem permissão de acesso.',
+      );
     }
 
     return classSubject;
@@ -133,9 +148,9 @@ export class ClassSubjectsService {
   async update(
     id: string,
     updateClassSubjectDto: UpdateClassSubjectDto,
-    institutionId: string,
+    currentUser: any,
   ) {
-    await this.findOne(id, institutionId);
+    await this.findOne(id, currentUser);
 
     return this.prisma.classSubject.update({
       where: { id },
@@ -143,8 +158,8 @@ export class ClassSubjectsService {
     });
   }
 
-  async remove(id: string, institutionId: string) {
-    await this.findOne(id, institutionId);
+  async remove(id: string, currentUser: any) {
+    await this.findOne(id, currentUser);
     return this.prisma.classSubject.delete({ where: { id } });
   }
 }

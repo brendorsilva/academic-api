@@ -11,20 +11,12 @@ import { PrismaService } from '../prisma/prisma.service';
 export class StudentsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createStudentDto: CreateStudentDto) {
-    // 1. Garantir que a instituição existe
-    const institution = await this.prisma.institution.findUnique({
-      where: { id: createStudentDto.institutionId },
-    });
+  async create(createStudentDto: CreateStudentDto, currentUser: any) {
+    const institutionId = currentUser.institutionId;
 
-    if (!institution) {
-      throw new NotFoundException('Instituição não encontrada.');
-    }
-
-    // 2. Validação de unicidade (CPF ou Email dentro da mesma instituição)
     const existingStudent = await this.prisma.student.findFirst({
       where: {
-        institutionId: createStudentDto.institutionId,
+        institutionId,
         OR: [{ cpf: createStudentDto.cpf }, { email: createStudentDto.email }],
       },
     });
@@ -36,26 +28,56 @@ export class StudentsService {
     }
 
     return this.prisma.student.create({
-      data: createStudentDto as any,
+      data: {
+        ...createStudentDto,
+        institutionId,
+      } as any,
     });
   }
 
-  // O isolamento dos dados exige que filtremos sempre pela instituição
-  async findAll(institutionId: string) {
+  async findAll(currentUser: any) {
+    const whereClause: any = { institutionId: currentUser.institutionId };
+
+    if (currentUser.role === 'COORDINATOR') {
+      whereClause.enrollments = {
+        some: {
+          classGroup: {
+            course: {
+              coordinatorId: currentUser.userId,
+            },
+          },
+        },
+      };
+    }
+
     return this.prisma.student.findMany({
-      where: { institutionId },
-      orderBy: { fullName: 'asc' }, // Ordenação alfabética por defeito
+      where: whereClause,
+      orderBy: { fullName: 'asc' },
     });
   }
 
-  async findOne(id: string, institutionId: string) {
+  async findOne(id: string, currentUser: any) {
+    const whereClause: any = { id, institutionId: currentUser.institutionId };
+
+    if (currentUser.role === 'COORDINATOR') {
+      whereClause.enrollments = {
+        some: {
+          classGroup: {
+            course: {
+              coordinatorId: currentUser.userId,
+            },
+          },
+        },
+      };
+    }
+
     const student = await this.prisma.student.findFirst({
-      where: { id, institutionId },
+      where: whereClause,
     });
 
     if (!student) {
       throw new NotFoundException(
-        'Aluno não encontrado ou não pertence a esta instituição.',
+        'Aluno não encontrado ou você não tem permissão para acessá-lo.',
       );
     }
 
@@ -64,11 +86,10 @@ export class StudentsService {
 
   async update(
     id: string,
-    institutionId: string,
     updateStudentDto: UpdateStudentDto,
+    currentUser: any,
   ) {
-    // Garantimos a existência e o isolamento chamando o findOne primeiro
-    await this.findOne(id, institutionId);
+    await this.findOne(id, currentUser);
 
     return this.prisma.student.update({
       where: { id },
@@ -76,18 +97,16 @@ export class StudentsService {
     });
   }
 
-  async remove(id: string, institutionId: string) {
-    // Verificamos novamente se o aluno pertence à instituição antes de apagar
-    await this.findOne(id, institutionId);
+  async remove(id: string, currentUser: any) {
+    await this.findOne(id, currentUser);
 
     return this.prisma.student.delete({
       where: { id },
     });
   }
 
-  async updatePhotoUrl(id: string, institutionId: string, photoUrl: string) {
-    // Valida se o aluno existe e pertence à instituição
-    await this.findOne(id, institutionId);
+  async updatePhotoUrl(id: string, photoUrl: string, currentUser: any) {
+    await this.findOne(id, currentUser);
 
     return this.prisma.student.update({
       where: { id },

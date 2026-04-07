@@ -40,46 +40,46 @@ export class TeachersController {
 
   @Post()
   @ApiOperation({ summary: 'Cadastra um novo professor' })
-  @Roles(Role.ADMIN, Role.COORDINATOR)
+  @Roles(Role.ADMIN)
   create(@Body() createTeacherDto: CreateTeacherDto, @CurrentUser() user: any) {
-    createTeacherDto.institutionId = user.institutionId;
-    return this.teachersService.create(createTeacherDto);
+    return this.teachersService.create(createTeacherDto, user);
   }
 
   @Get()
   @ApiOperation({ summary: 'Lista todos os professores da instituição' })
+  @Roles(Role.ADMIN, Role.COORDINATOR)
   findAll(@CurrentUser() user: any) {
-    return this.teachersService.findAll(user.institutionId);
+    return this.teachersService.findAll(user);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtém os detalhes de um professor específico' })
+  @Roles(Role.ADMIN, Role.COORDINATOR)
   findOne(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.teachersService.findOne(id, user.institutionId);
+    return this.teachersService.findOne(id, user);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Atualiza os dados de um professor' })
+  @Roles(Role.ADMIN)
   update(
     @Param('id') id: string,
     @Body() updateTeacherDto: UpdateTeacherDto,
     @CurrentUser() user: any,
   ) {
-    return this.teachersService.update(
-      id,
-      user.institutionId,
-      updateTeacherDto,
-    );
+    return this.teachersService.update(id, updateTeacherDto, user);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Inativa um professor (Soft Delete)' })
+  @Roles(Role.ADMIN)
   remove(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.teachersService.remove(id, user.institutionId);
+    return this.teachersService.remove(id, user);
   }
 
   @Post(':id/photo')
   @ApiOperation({ summary: 'Faz o upload da foto do professor' })
+  @Roles(Role.ADMIN)
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -103,17 +103,12 @@ export class TeachersController {
     const buffer = await data.toBuffer();
 
     try {
-      // Aqui usamos a genialidade da nossa refatoração: mudamos apenas a string para 'teachers'
       const result = await this.cloudinaryService.uploadImage(
         buffer,
         id,
         'teachers',
       );
-      return this.teachersService.updatePhotoUrl(
-        id,
-        user.institutionId,
-        result.secure_url,
-      );
+      return this.teachersService.updatePhotoUrl(id, result.secure_url, user);
     } catch (error) {
       throw new BadRequestException('Falha ao processar o upload da imagem');
     }

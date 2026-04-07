@@ -32,7 +32,7 @@ export class SubjectsController {
   @ApiOperation({ summary: 'Criar uma nova disciplina vinculada a um curso' })
   create(@Body() createSubjectDto: CreateSubjectDto, @CurrentUser() user: any) {
     createSubjectDto.institutionId = user.institutionId;
-    return this.subjectsService.create(createSubjectDto);
+    return this.subjectsService.create(createSubjectDto, user);
   }
 
   @Get()
@@ -45,13 +45,13 @@ export class SubjectsController {
     description: 'Filtrar disciplinas por um Curso específico',
   })
   findAll(@CurrentUser() user: any, @Query('courseId') courseId?: string) {
-    return this.subjectsService.findAll(user.institutionId, courseId);
+    return this.subjectsService.findAll(user, courseId);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Procurar uma disciplina específica' })
   findOne(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.subjectsService.findOne(id, user.institutionId);
+    return this.subjectsService.findOne(id, user);
   }
 
   @Patch(':id')
@@ -62,16 +62,12 @@ export class SubjectsController {
     @CurrentUser() user: any,
   ) {
     delete updateSubjectDto.institutionId;
-    return this.subjectsService.update(
-      id,
-      updateSubjectDto,
-      user.institutionId,
-    );
+    return this.subjectsService.update(id, updateSubjectDto, user);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Excluir uma disciplina' })
   remove(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.subjectsService.remove(id, user.institutionId);
+    return this.subjectsService.remove(id, user);
   }
 }

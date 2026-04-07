@@ -37,7 +37,7 @@ export class ClassSubjectsController {
     @CurrentUser() user: any,
   ) {
     createClassSubjectDto.institutionId = user.institutionId;
-    return this.classSubjectsService.create(createClassSubjectDto);
+    return this.classSubjectsService.create(createClassSubjectDto, user);
   }
 
   @Get()
@@ -49,13 +49,13 @@ export class ClassSubjectsController {
     @CurrentUser() user: any,
     @Query('classGroupId') classGroupId?: string,
   ) {
-    return this.classSubjectsService.findAll(user.institutionId, classGroupId);
+    return this.classSubjectsService.findAll(user, classGroupId);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Procurar uma oferta específica' })
   findOne(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.classSubjectsService.findOne(id, user.institutionId);
+    return this.classSubjectsService.findOne(id, user);
   }
 
   @Patch(':id')
@@ -68,16 +68,12 @@ export class ClassSubjectsController {
     @CurrentUser() user: any,
   ) {
     delete updateClassSubjectDto.institutionId;
-    return this.classSubjectsService.update(
-      id,
-      updateClassSubjectDto,
-      user.institutionId,
-    );
+    return this.classSubjectsService.update(id, updateClassSubjectDto, user);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Excluir uma oferta de disciplina' })
   remove(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.classSubjectsService.remove(id, user.institutionId);
+    return this.classSubjectsService.remove(id, user);
   }
 }

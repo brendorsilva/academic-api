@@ -11,12 +11,18 @@ import { PrismaService } from '../prisma/prisma.service';
 export class SubjectsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createSubjectDto: CreateSubjectDto) {
+  async create(createSubjectDto: CreateSubjectDto, currentUser: any) {
+    const courseWhere: any = {
+      id: createSubjectDto.courseId,
+      institutionId: currentUser.institutionId,
+    };
+
+    if (currentUser.role === 'COORDINATOR') {
+      courseWhere.coordinatorId = currentUser.userId;
+    }
+
     const course = await this.prisma.course.findFirst({
-      where: {
-        id: createSubjectDto.courseId,
-        institutionId: createSubjectDto.institutionId,
-      },
+      where: courseWhere,
     });
 
     if (!course) {
@@ -26,14 +32,23 @@ export class SubjectsService {
     }
 
     return this.prisma.subject.create({
-      data: createSubjectDto as any,
+      data: {
+        ...createSubjectDto,
+        institutionId: currentUser.institutionId,
+      } as any,
     });
   }
 
-  async findAll(institutionId: string, courseId?: string) {
-    const whereClause: any = { institutionId };
+  async findAll(currentUser: any, courseId?: string) {
+    const whereClause: any = { institutionId: currentUser.institutionId };
     if (courseId) {
       whereClause.courseId = courseId;
+    }
+
+    if (currentUser.role === 'COORDINATOR') {
+      whereClause.course = {
+        coordinatorId: currentUser.userId,
+      };
     }
 
     return this.prisma.subject.findMany({
@@ -43,9 +58,20 @@ export class SubjectsService {
     });
   }
 
-  async findOne(id: string, institutionId: string) {
+  async findOne(id: string, currentUser: any) {
+    const whereClause: any = {
+      id,
+      institutionId: currentUser.institutionId,
+    };
+
+    if (currentUser.role === 'COORDINATOR') {
+      whereClause.course = {
+        coordinatorId: currentUser.userId,
+      };
+    }
+
     const subject = await this.prisma.subject.findFirst({
-      where: { id, institutionId },
+      where: whereClause,
       include: { course: true },
     });
 
@@ -56,9 +82,9 @@ export class SubjectsService {
   async update(
     id: string,
     updateSubjectDto: UpdateSubjectDto,
-    institutionId: string,
+    currentUser: any,
   ) {
-    await this.findOne(id, institutionId);
+    await this.findOne(id, currentUser);
 
     return this.prisma.subject.update({
       where: { id },
@@ -66,8 +92,8 @@ export class SubjectsService {
     });
   }
 
-  async remove(id: string, institutionId: string) {
-    await this.findOne(id, institutionId);
+  async remove(id: string, currentUser: any) {
+    await this.findOne(id, currentUser);
 
     return this.prisma.subject.delete({
       where: { id },

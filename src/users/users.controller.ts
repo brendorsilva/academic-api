@@ -1,5 +1,5 @@
 // src/users/users.controller.ts
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
@@ -9,6 +9,7 @@ import { CreateUserAccessDto } from './dto/create-user-access.dto';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/roles.guard';
+import { CreateCoordinatorDto } from './dto/create-coordinator.dto';
 
 @ApiTags('Users (Signup)')
 @Controller('users')
@@ -27,6 +28,24 @@ export class UsersController {
   @Roles(Role.ADMIN, Role.COORDINATOR)
   generateAccess(@Body() dto: CreateUserAccessDto, @CurrentUser() user: any) {
     return this.usersService.generateAccess(dto, user);
+  }
+
+  @Get('coordinators')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  listCoordinators(@CurrentUser() adminUser: any) {
+    return this.usersService.listCoordinators(adminUser);
+  }
+
+  @Post('coordinator')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Cria um novo usuário com perfil de Coordenador' })
+  createCoordinator(
+    @Body() dto: CreateCoordinatorDto,
+    @CurrentUser() adminUser: any,
+  ) {
+    return this.usersService.createCoordinator(dto, adminUser);
   }
 
   @Post('update-password')

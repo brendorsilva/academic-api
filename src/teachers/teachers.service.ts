@@ -11,11 +11,12 @@ import { PrismaService } from '../prisma/prisma.service';
 export class TeachersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createTeacherDto: CreateTeacherDto) {
-    // Validação de unicidade (CPF ou Email dentro da mesma instituição)
+  async create(createTeacherDto: CreateTeacherDto, currentUser: any) {
+    const institutionId = currentUser.institutionId;
+
     const existingTeacher = await this.prisma.teacher.findFirst({
       where: {
-        institutionId: createTeacherDto.institutionId,
+        institutionId,
         OR: [{ cpf: createTeacherDto.cpf }, { email: createTeacherDto.email }],
       },
     });
@@ -27,25 +28,56 @@ export class TeachersService {
     }
 
     return this.prisma.teacher.create({
-      data: createTeacherDto as any, // Cast necessário devido à injeção condicional do institutionId
+      data: {
+        ...createTeacherDto,
+        institutionId,
+      } as any,
     });
   }
 
-  async findAll(institutionId: string) {
+  async findAll(currentUser: any) {
+    const whereClause: any = { institutionId: currentUser.institutionId };
+
+    if (currentUser.role === 'COORDINATOR') {
+      whereClause.classSubjects = {
+        some: {
+          classGroup: {
+            course: {
+              coordinatorId: currentUser.userId,
+            },
+          },
+        },
+      };
+    }
+
     return this.prisma.teacher.findMany({
-      where: { institutionId },
+      where: whereClause,
       orderBy: { fullName: 'asc' },
     });
   }
 
-  async findOne(id: string, institutionId: string) {
+  async findOne(id: string, currentUser: any) {
+    const whereClause: any = { id, institutionId: currentUser.institutionId };
+
+    if (currentUser.role === 'COORDINATOR') {
+      whereClause.classSubjects = {
+        some: {
+          classGroup: {
+            course: {
+              coordinatorId: currentUser.userId,
+            },
+          },
+        },
+      };
+    }
+
     const teacher = await this.prisma.teacher.findFirst({
-      where: { id, institutionId },
+      where: whereClause,
     });
 
     if (!teacher) {
       throw new NotFoundException(
-        'Professor não encontrado ou não pertence a esta instituição.',
+        'Professor não encontrado ou você não tem permissão para aceder aos dados deste professor.',
       );
     }
 
@@ -54,10 +86,10 @@ export class TeachersService {
 
   async update(
     id: string,
-    institutionId: string,
     updateTeacherDto: UpdateTeacherDto,
+    currentUser: any,
   ) {
-    await this.findOne(id, institutionId);
+    await this.findOne(id, currentUser);
 
     return this.prisma.teacher.update({
       where: { id },
@@ -65,18 +97,17 @@ export class TeachersService {
     });
   }
 
-  async remove(id: string, institutionId: string) {
-    await this.findOne(id, institutionId);
+  async remove(id: string, currentUser: any) {
+    await this.findOne(id, currentUser);
 
-    // Soft delete: Apenas inativamos o professor em vez de excluí-lo fisicamente
     return this.prisma.teacher.update({
       where: { id },
       data: { isActive: false },
     });
   }
 
-  async updatePhotoUrl(id: string, institutionId: string, photoUrl: string) {
-    await this.findOne(id, institutionId);
+  async updatePhotoUrl(id: string, photoUrl: string, currentUser: any) {
+    await this.findOne(id, currentUser);
 
     return this.prisma.teacher.update({
       where: { id },
