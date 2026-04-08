@@ -2,7 +2,7 @@
 import { Controller, Post, Body, UseGuards, Get, Delete } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Roles } from 'src/auth/roles.decorator';
 import { Role } from '@prisma/client';
 import { CreateUserAccessDto } from './dto/create-user-access.dto';
@@ -31,6 +31,7 @@ export class UsersController {
   }
 
   @Get('coordinators')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   listCoordinators(@CurrentUser() adminUser: any) {
@@ -38,6 +39,7 @@ export class UsersController {
   }
 
   @Delete('coordinator')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Remove um usuário com perfil de Coordenador' })
@@ -49,6 +51,7 @@ export class UsersController {
   }
 
   @Post('coordinator')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Cria um novo usuário com perfil de Coordenador' })
