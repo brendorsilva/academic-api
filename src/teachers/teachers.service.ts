@@ -51,7 +51,7 @@ export class TeachersService {
     }
 
     return this.prisma.teacher.findMany({
-      where: whereClause,
+      where: { ...whereClause, isActive: true },
       orderBy: { fullName: 'asc' },
     });
   }
@@ -72,7 +72,7 @@ export class TeachersService {
     }
 
     const teacher = await this.prisma.teacher.findFirst({
-      where: whereClause,
+      where: { ...whereClause, isActive: true },
     });
 
     if (!teacher) {
