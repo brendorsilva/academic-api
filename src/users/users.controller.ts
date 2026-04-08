@@ -46,7 +46,7 @@ export class UsersController {
     return this.usersService.listCoordinators(adminUser);
   }
 
-  @Delete('coordinator')
+  @Delete('coordinator/:id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
