@@ -1,5 +1,5 @@
 // src/users/users.controller.ts
-import { Controller, Post, Body, UseGuards, Get } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Delete } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
@@ -35,6 +35,17 @@ export class UsersController {
   @Roles(Role.ADMIN)
   listCoordinators(@CurrentUser() adminUser: any) {
     return this.usersService.listCoordinators(adminUser);
+  }
+
+  @Delete('coordinator')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Remove um usuário com perfil de Coordenador' })
+  removeCoordinator(
+    @Body('email') email: string,
+    @CurrentUser() adminUser: any,
+  ) {
+    return this.usersService.removeCoordinator(email, adminUser);
   }
 
   @Post('coordinator')

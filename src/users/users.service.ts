@@ -132,6 +132,22 @@ export class UsersService {
     });
   }
 
+  async removeCoordinator(id: string, currentUser: any) {
+    const coordinator = await this.prisma.user.findFirst({
+      where: {
+        id,
+        institutionId: currentUser.institutionId,
+        role: 'COORDINATOR',
+      },
+    });
+
+    if (!coordinator) {
+      throw new NotFoundException('Coordenador não encontrado.');
+    }
+
+    await this.prisma.user.delete({ where: { id: coordinator.id } });
+  }
+
   async createCoordinator(dto: CreateCoordinatorDto, currentUser: any) {
     const { name, email, password } = dto;
 
