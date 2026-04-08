@@ -94,6 +94,9 @@ export class StudentsController {
     @CurrentUser() user: any,
     @Req() req: FastifyRequest,
   ) {
+    // 1. Log para debug (aparecerá no docker logs)
+    console.log('Iniciando upload para ID:', id);
+
     if (!req.isMultipart()) {
       throw new BadRequestException(
         'A requisição deve ser multipart/form-data',
@@ -102,8 +105,12 @@ export class StudentsController {
 
     const data = await req.file();
     if (!data) {
+      console.error('Erro: Fastify não encontrou nenhum arquivo na stream');
       throw new BadRequestException('Nenhum arquivo enviado');
     }
+
+    // Verifique se o nome do campo enviado no front coincide
+    console.log('Campo recebido:', data.fieldname);
 
     const buffer = await data.toBuffer();
 
@@ -116,6 +123,7 @@ export class StudentsController {
 
       return this.studentsService.updatePhotoUrl(id, result.secure_url, user);
     } catch (error) {
+      console.error('Erro Cloudinary:', error);
       throw new BadRequestException('Falha ao processar o upload da imagem');
     }
   }
