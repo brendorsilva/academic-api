@@ -172,6 +172,14 @@ export class EnrollmentsService {
     const subjectIdsToFree = enrollment.subjects.map((s) => s.classSubjectId);
 
     return this.prisma.$transaction(async (tx) => {
+      await tx.attendance.deleteMany({
+        where: {
+          enrollmentSubject: {
+            enrollmentId: id,
+          },
+        },
+      });
+
       await tx.enrollmentSubject.deleteMany({
         where: { enrollmentId: id },
       });
