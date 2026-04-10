@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE `courses` ADD COLUMN `evaluationType` ENUM('BIMESTRAL', 'TRIMESTRAL', 'SEMESTRAL', 'ANUAL') NOT NULL DEFAULT 'BIMESTRAL';
+
+-- AlterTable
+ALTER TABLE `grades` ADD COLUMN `period` INTEGER NULL;

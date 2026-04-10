@@ -8,7 +8,7 @@ import {
   IsEnum,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Modality, Level } from '@prisma/client';
+import { Modality, Level, EvaluationType } from '@prisma/client';
 
 export class CreateCourseDto {
   @ApiPropertyOptional({
@@ -69,6 +69,16 @@ export class CreateCourseDto {
   @IsInt()
   @IsNotEmpty()
   durationPeriods: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Tipo de avaliação: BIMESTRAL (4 períodos), TRIMESTRAL (3), SEMESTRAL (2), ANUAL (1). Padrão: BIMESTRAL.',
+    enum: EvaluationType,
+    example: EvaluationType.BIMESTRAL,
+  })
+  @IsEnum(EvaluationType)
+  @IsOptional()
+  evaluationType?: EvaluationType;
 
   @ApiPropertyOptional({
     description: 'Status de atividade do curso',

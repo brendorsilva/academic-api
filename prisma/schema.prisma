@@ -154,16 +154,17 @@ model Teacher {
 }
 
 model Course {
-  id              String   @id @default(uuid())
+  id              String         @id @default(uuid())
   institutionId   String
   name            String
   code            String
   modality        Modality
   level           Level
-  workload        Int      // Carga horária total
-  durationPeriods Int      // Duração em semestres/anos
-  isActive        Boolean  @default(true)
-  
+  workload        Int            // Carga horária total
+  durationPeriods Int            // Duração em semestres/anos
+  evaluationType  EvaluationType @default(BIMESTRAL) // Define quantos períodos avaliativos o curso possui
+  isActive        Boolean        @default(true)
+
   coordinatorId   String?
   coordinator     User? @relation("CourseCoordinator", fields: [coordinatorId], references: [id])
 
@@ -344,10 +345,11 @@ model Grade {
   id                  String            @id @default(uuid())
   institutionId       String
   enrollmentSubjectId String
-  name                String            // Ex: "Prova Bimestral", "Trabalho"
+  name                String            // Ex: "AV1", "Trabalho Final"
   value               Float             // O valor da nota em si
   weight              Float             @default(1.0) // Peso da nota na média
   date                DateTime          @db.Date
+  period              Int?              // Período avaliativo: 1, 2, 3 ou 4 (bimestre/trimestre/semestre)
 
   enrollmentSubject   EnrollmentSubject @relation(fields: [enrollmentSubjectId], references: [id])
   auditLogs           GradeAuditLog[]
@@ -461,4 +463,11 @@ enum AuditAction {
   CREATED
   UPDATED
   DELETED
+}
+
+enum EvaluationType {
+  BIMESTRAL   // 4 períodos (padrão escolas brasileiras)
+  TRIMESTRAL  // 3 períodos
+  SEMESTRAL   // 2 períodos (padrão faculdades/universidades)
+  ANUAL       // 1 período
 }
