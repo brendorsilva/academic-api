@@ -75,7 +75,7 @@ export class GradesService {
         data: {
           institutionId: user.institutionId,
           gradeId: updatedGrade.id,
-          userId: user.sub,
+          userId: user.userId,
           action: 'UPDATED',
           oldValue: existingGrade.value,
           newValue: updatedGrade.value,
@@ -100,7 +100,7 @@ export class GradesService {
       await tx.gradeAuditLog.create({
         data: {
           institutionId: user.institutionId,
-          userId: user.sub,
+          userId: user.userId,
           action: 'DELETED',
           oldValue: existingGrade.value,
           reason: reason || 'Exclusão manual',
