@@ -38,17 +38,20 @@ export class TeachersService {
   async findAll(currentUser: any) {
     const whereClause: any = { institutionId: currentUser.institutionId };
 
-    if (currentUser.role === 'COORDINATOR') {
-      whereClause.classSubjects = {
-        some: {
-          classGroup: {
-            course: {
-              coordinatorId: currentUser.userId,
-            },
-          },
-        },
-      };
-    }
+    // if (
+    //   currentUser.roles?.includes('COORDINATOR') &&
+    //   !currentUser.roles?.includes('ADMIN')
+    // ) {
+    //   whereClause.classSubjects = {
+    //     some: {
+    //       classGroup: {
+    //         course: {
+    //           coordinatorId: currentUser.userId,
+    //         },
+    //       },
+    //     },
+    //   };
+    // }
 
     return this.prisma.teacher.findMany({
       where: { ...whereClause, isActive: true },
@@ -59,17 +62,20 @@ export class TeachersService {
   async findOne(id: string, currentUser: any) {
     const whereClause: any = { id, institutionId: currentUser.institutionId };
 
-    if (currentUser.role === 'COORDINATOR') {
-      whereClause.classSubjects = {
-        some: {
-          classGroup: {
-            course: {
-              coordinatorId: currentUser.userId,
-            },
-          },
-        },
-      };
-    }
+    // if (
+    //   currentUser.roles?.includes('COORDINATOR') &&
+    //   !currentUser.roles?.includes('ADMIN')
+    // ) {
+    //   whereClause.classSubjects = {
+    //     some: {
+    //       classGroup: {
+    //         course: {
+    //           coordinatorId: currentUser.userId,
+    //         },
+    //       },
+    //     },
+    //   };
+    // }
 
     const teacher = await this.prisma.teacher.findFirst({
       where: { ...whereClause, isActive: true },

@@ -1,26 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { ConfigService } from '@nestjs/config';
 
 // Uma interface simples para tipar o que esperamos de dentro do token
 export interface JwtPayload {
   sub: string;
   email: string;
   institutionId: string;
-  role: string;
+  roles: string[];
   teacherId?: string;
   studentId?: string;
 }
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  constructor(configService: ConfigService) {
     super({
-      // Extrai o token do cabeçalho de Autorização (Bearer Token)
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false, // Rejeita tokens expirados
-      secretOrKey:
-        process.env.JWT_SECRET || 'super-secret-key-mudar-em-producao',
+      ignoreExpiration: false,
+      secretOrKey: configService.get<string>('JWT_SECRET') ?? '',
     });
   }
 
@@ -31,7 +30,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       userId: payload.sub,
       email: payload.email,
       institutionId: payload.institutionId,
-      role: payload.role,
+      roles: payload.roles,
       teacherId: payload.teacherId,
       studentId: payload.studentId,
     };

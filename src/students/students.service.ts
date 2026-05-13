@@ -38,7 +38,7 @@ export class StudentsService {
   async findAll(currentUser: any) {
     const whereClause: any = { institutionId: currentUser.institutionId };
 
-    if (currentUser.role === 'COORDINATOR') {
+    if (currentUser.roles?.includes('COORDINATOR') && !currentUser.roles?.includes('ADMIN')) {
       whereClause.enrollments = {
         some: {
           classGroup: {
@@ -59,7 +59,7 @@ export class StudentsService {
   async findOne(id: string, currentUser: any) {
     const whereClause: any = { id, institutionId: currentUser.institutionId };
 
-    if (currentUser.role === 'COORDINATOR') {
+    if (currentUser.roles?.includes('COORDINATOR') && !currentUser.roles?.includes('ADMIN')) {
       whereClause.enrollments = {
         some: {
           classGroup: {

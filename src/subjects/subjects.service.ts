@@ -17,7 +17,7 @@ export class SubjectsService {
       institutionId: currentUser.institutionId,
     };
 
-    if (currentUser.role === 'COORDINATOR') {
+    if (currentUser.roles?.includes('COORDINATOR') && !currentUser.roles?.includes('ADMIN')) {
       courseWhere.coordinatorId = currentUser.userId;
     }
 
@@ -45,7 +45,7 @@ export class SubjectsService {
       whereClause.courseId = courseId;
     }
 
-    if (currentUser.role === 'COORDINATOR') {
+    if (currentUser.roles?.includes('COORDINATOR') && !currentUser.roles?.includes('ADMIN')) {
       whereClause.course = {
         coordinatorId: currentUser.userId,
       };
@@ -64,7 +64,7 @@ export class SubjectsService {
       institutionId: currentUser.institutionId,
     };
 
-    if (currentUser.role === 'COORDINATOR') {
+    if (currentUser.roles?.includes('COORDINATOR') && !currentUser.roles?.includes('ADMIN')) {
       whereClause.course = {
         coordinatorId: currentUser.userId,
       };

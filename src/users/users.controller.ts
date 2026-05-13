@@ -7,6 +7,8 @@ import {
   Get,
   Delete,
   Param,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -38,6 +40,17 @@ export class UsersController {
     return this.usersService.generateAccess(dto, user);
   }
 
+  @Get()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.COORDINATOR)
+  @ApiOperation({
+    summary: 'Lista todos os utilizadores da instituição com suas roles',
+  })
+  findAll(@CurrentUser() adminUser: any) {
+    return this.usersService.findAll(adminUser);
+  }
+
   @Get('coordinators')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -65,6 +78,49 @@ export class UsersController {
     @CurrentUser() adminUser: any,
   ) {
     return this.usersService.createCoordinator(dto, adminUser);
+  }
+
+  @Post(':id/teacher/:teacherId')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.COORDINATOR)
+  @ApiOperation({
+    summary:
+      'Vincula um perfil de professor a um utilizador existente e adiciona a role TEACHER',
+  })
+  linkTeacher(
+    @Param('id') id: string,
+    @Param('teacherId') teacherId: string,
+    @CurrentUser() adminUser: any,
+  ) {
+    return this.usersService.linkTeacher(id, teacherId, adminUser);
+  }
+
+  @Post(':id/roles')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Adiciona uma role a um utilizador' })
+  addRole(
+    @Param('id') id: string,
+    @Body('role') role: Role,
+    @CurrentUser() adminUser: any,
+  ) {
+    return this.usersService.addRole(id, role, adminUser);
+  }
+
+  @Delete(':id/roles/:role')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remove uma role de um utilizador' })
+  removeRole(
+    @Param('id') id: string,
+    @Param('role') role: Role,
+    @CurrentUser() adminUser: any,
+  ) {
+    return this.usersService.removeRole(id, role, adminUser);
   }
 
   @Post('update-password')

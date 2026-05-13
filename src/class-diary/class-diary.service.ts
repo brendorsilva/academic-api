@@ -21,7 +21,7 @@ export class ClassDiaryService {
       throw new NotFoundException('Turma/Disciplina não encontrada.');
     }
 
-    if (user.role === 'TEACHER' && classSubject.teacherId !== user.teacherId) {
+    if (user.roles?.includes('TEACHER') && classSubject.teacherId !== user.teacherId) {
       throw new ForbiddenException(
         'Você não tem permissão para lançar diário nesta turma.',
       );

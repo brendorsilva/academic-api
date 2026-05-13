@@ -14,6 +14,7 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: loginDto.email },
+      include: { roles: true },
     });
 
     if (!user) {
@@ -33,7 +34,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       institutionId: user.institutionId,
-      role: user.role,
+      roles: user.roles.map((r) => r.role),
       teacherId: user.teacherId,
       studentId: user.studentId,
       mustChangePassword: user.mustChangePassword,
@@ -45,7 +46,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         institutionId: user.institutionId,
-        role: user.role,
+        roles: user.roles.map((r) => r.role),
         teacherId: user.teacherId,
         studentId: user.studentId,
         mustChangePassword: user.mustChangePassword,

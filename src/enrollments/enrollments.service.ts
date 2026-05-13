@@ -17,7 +17,7 @@ export class EnrollmentsService {
     const institutionId = user.institutionId;
 
     const classGroupWhere: any = { id: classGroupId, institutionId };
-    if (user.role === 'COORDINATOR') {
+    if (user.roles?.includes('COORDINATOR') && !user.roles?.includes('ADMIN')) {
       classGroupWhere.course = { coordinatorId: user.userId };
     }
 
@@ -103,7 +103,7 @@ export class EnrollmentsService {
   async findAll(user: any, classGroupId?: string, studentId?: string) {
     const whereClause: any = { institutionId: user.institutionId };
 
-    if (user.role === 'STUDENT') {
+    if (user.roles?.includes('STUDENT')) {
       whereClause.studentId = user.studentId;
     } else if (studentId) {
       whereClause.studentId = studentId;
@@ -111,7 +111,7 @@ export class EnrollmentsService {
 
     if (classGroupId) whereClause.classGroupId = classGroupId;
 
-    if (user.role === 'COORDINATOR') {
+    if (user.roles?.includes('COORDINATOR') && !user.roles?.includes('ADMIN')) {
       whereClause.classGroup = {
         course: { coordinatorId: user.userId },
       };
@@ -135,7 +135,7 @@ export class EnrollmentsService {
   async findOne(id: string, user: any) {
     const whereClause: any = { id, institutionId: user.institutionId };
 
-    if (user.role === 'COORDINATOR') {
+    if (user.roles?.includes('COORDINATOR') && !user.roles?.includes('ADMIN')) {
       whereClause.classGroup = {
         course: { coordinatorId: user.userId },
       };
@@ -159,7 +159,7 @@ export class EnrollmentsService {
         'Matrícula não encontrada ou sem permissão de acesso.',
       );
 
-    if (user.role === 'STUDENT' && enrollment.studentId !== user.studentId) {
+    if (user.roles?.includes('STUDENT') && enrollment.studentId !== user.studentId) {
       throw new ForbiddenException('Acesso negado a esta matrícula.');
     }
 

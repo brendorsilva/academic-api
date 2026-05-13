@@ -13,7 +13,7 @@ export class CoursesService {
       institutionId: currentUser.institutionId,
     };
 
-    if (currentUser.role === 'COORDINATOR') {
+    if (currentUser.roles?.includes('COORDINATOR') && !currentUser.roles?.includes('ADMIN')) {
       data.coordinatorId = currentUser.userId;
     }
 
@@ -25,7 +25,7 @@ export class CoursesService {
   async findAll(currentUser: any) {
     const whereClause: any = { institutionId: currentUser.institutionId };
 
-    if (currentUser.role === 'COORDINATOR') {
+    if (currentUser.roles?.includes('COORDINATOR') && !currentUser.roles?.includes('ADMIN')) {
       whereClause.coordinatorId = currentUser.userId;
     }
 
@@ -41,7 +41,7 @@ export class CoursesService {
   async findOne(id: string, currentUser: any) {
     const whereClause: any = { id, institutionId: currentUser.institutionId };
 
-    if (currentUser.role === 'COORDINATOR') {
+    if (currentUser.roles?.includes('COORDINATOR') && !currentUser.roles?.includes('ADMIN')) {
       whereClause.coordinatorId = currentUser.userId;
     }
 

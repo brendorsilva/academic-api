@@ -22,6 +22,10 @@ model Institution {
   users    User[]
   teachers Teacher[]
 
+  financialCategories   FinancialCategory[]
+  financialAccounts     FinancialAccount[]
+  financialTransactions FinancialTransaction[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -78,7 +82,6 @@ model User {
   name     String
   email    String @unique
   password String
-  role     Role @default(ADMIN)
 
   institutionId String
   institution   Institution @relation(fields: [institutionId], references: [id])
@@ -90,15 +93,26 @@ model User {
   student       Student? @relation(fields: [studentId], references: [id])
 
   auditLogs     GradeAuditLog[]
-  
+  roles         UserRole[]
+
   mustChangePassword Boolean @default(false)
 
   coordinatedCourses Course[] @relation("CourseCoordinator")
-  
+
   createAt  DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("users")
+}
+
+model UserRole {
+  id     String @id @default(uuid())
+  userId String
+  role   Role
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@map("user_roles")
 }
 
 model Teacher {
@@ -338,6 +352,69 @@ model Attendance {
 }
 
 // ==========================================
+// MÓDULO FINANCEIRO
+// ==========================================
+
+model FinancialCategory {
+  id            String               @id @default(uuid())
+  institutionId String
+  name          String
+  description   String?
+  type          TransactionType
+  isActive      Boolean              @default(true)
+
+  institution   Institution          @relation(fields: [institutionId], references: [id])
+  transactions  FinancialTransaction[]
+
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@map("financial_categories")
+}
+
+model FinancialAccount {
+  id            String               @id @default(uuid())
+  institutionId String
+  name          String
+  type          FinancialAccountType
+  balance       Float                @default(0)
+  description   String?
+  isActive      Boolean              @default(true)
+
+  institution   Institution          @relation(fields: [institutionId], references: [id])
+  transactions  FinancialTransaction[]
+
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@map("financial_accounts")
+}
+
+model FinancialTransaction {
+  id            String            @id @default(uuid())
+  institutionId String
+  accountId     String
+  categoryId    String
+  type          TransactionType
+  status        TransactionStatus @default(PENDING)
+  amount        Float
+  description   String
+  dueDate       DateTime          @db.Date
+  paymentDate   DateTime?         @db.Date
+  reference     String?
+  notes         String?           @db.Text
+
+  institution   Institution       @relation(fields: [institutionId], references: [id])
+  account       FinancialAccount  @relation(fields: [accountId], references: [id])
+  category      FinancialCategory @relation(fields: [categoryId], references: [id])
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@map("financial_transactions")
+}
+
+// ==========================================
 // MÓDULO DE NOTAS E AUDITORIA (COMPROVANTE)
 // ==========================================
 
@@ -470,4 +547,23 @@ enum EvaluationType {
   TRIMESTRAL  // 3 períodos
   SEMESTRAL   // 2 períodos (padrão faculdades/universidades)
   ANUAL       // 1 período
+}
+
+enum FinancialAccountType {
+  CHECKING  // Conta Corrente
+  SAVINGS   // Conta Poupança
+  CASH      // Caixa físico
+  CREDIT    // Cartão de Crédito
+  OTHER
+}
+
+enum TransactionType {
+  INCOME   // Receita / Entrada
+  EXPENSE  // Despesa / Saída
+}
+
+enum TransactionStatus {
+  PENDING    // Pendente (não impacta saldo)
+  CONFIRMED  // Confirmado (impacta saldo)
+  CANCELLED  // Cancelado (reverte saldo se era CONFIRMED)
 }

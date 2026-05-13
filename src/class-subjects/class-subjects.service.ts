@@ -19,7 +19,7 @@ export class ClassSubjectsService {
     const classGroupWhere: any = { id: classGroupId, institutionId };
     const subjectWhere: any = { id: subjectId, institutionId };
 
-    if (currentUser.role === 'COORDINATOR') {
+    if (currentUser.roles?.includes('COORDINATOR') && !currentUser.roles?.includes('ADMIN')) {
       classGroupWhere.course = { coordinatorId: currentUser.userId };
       subjectWhere.course = { coordinatorId: currentUser.userId };
     }
@@ -89,7 +89,7 @@ export class ClassSubjectsService {
 
     if (classGroupId) whereClause.classGroupId = classGroupId;
 
-    if (currentUser.role === 'COORDINATOR') {
+    if (currentUser.roles?.includes('COORDINATOR') && !currentUser.roles?.includes('ADMIN')) {
       whereClause.classGroup = {
         course: { coordinatorId: currentUser.userId },
       };
@@ -111,7 +111,7 @@ export class ClassSubjectsService {
       institutionId: currentUser.institutionId,
     };
 
-    if (currentUser.role === 'COORDINATOR') {
+    if (currentUser.roles?.includes('COORDINATOR') && !currentUser.roles?.includes('ADMIN')) {
       whereClause.classGroup = {
         course: { coordinatorId: currentUser.userId },
       };

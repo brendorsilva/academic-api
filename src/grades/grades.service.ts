@@ -82,7 +82,7 @@ export class GradesService {
           reason: updateDto.reason,
         },
         include: {
-          user: { select: { name: true, role: true } },
+          user: { select: { name: true, roles: { select: { role: true } } } },
           grade: { select: { name: true, date: true } },
         },
       });
@@ -114,7 +114,7 @@ export class GradesService {
 
   // 4. Boletim do aluno
   async getStudentBoletim(studentId: string, user: any) {
-    if (user.role === 'STUDENT' && user.studentId !== studentId) {
+    if (user.roles?.includes('STUDENT') && user.studentId !== studentId) {
       throw new ForbiddenException(
         'Você só pode visualizar o seu próprio boletim.',
       );
@@ -167,7 +167,7 @@ export class GradesService {
 
     // Professores só acessam disciplinas que lecionam
     if (
-      user.role === 'TEACHER' &&
+      user.roles?.includes('TEACHER') &&
       classSubject.teacherId !== user.teacherId
     ) {
       throw new ForbiddenException(
@@ -283,7 +283,7 @@ export class GradesService {
     }
 
     if (
-      user.role === 'TEACHER' &&
+      user.roles?.includes('TEACHER') &&
       classSubject.teacherId !== user.teacherId
     ) {
       throw new ForbiddenException(

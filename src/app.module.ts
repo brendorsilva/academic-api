@@ -15,6 +15,9 @@ import { ClassSubjectsModule } from './class-subjects/class-subjects.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
 import { ClassDiaryModule } from './class-diary/class-diary.module';
 import { GradesModule } from './grades/grades.module';
+import { FinancialCategoriesModule } from './financial-categories/financial-categories.module';
+import { FinancialAccountsModule } from './financial-accounts/financial-accounts.module';
+import { FinancialTransactionsModule } from './financial-transactions/financial-transactions.module';
 
 @Module({
   imports: [
@@ -36,6 +39,9 @@ import { GradesModule } from './grades/grades.module';
     EnrollmentsModule,
     ClassDiaryModule,
     GradesModule,
+    FinancialCategoriesModule,
+    FinancialAccountsModule,
+    FinancialTransactionsModule,
   ],
   controllers: [],
   providers: [],
