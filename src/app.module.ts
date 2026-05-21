@@ -18,6 +18,7 @@ import { GradesModule } from './grades/grades.module';
 import { FinancialCategoriesModule } from './financial-categories/financial-categories.module';
 import { FinancialAccountsModule } from './financial-accounts/financial-accounts.module';
 import { FinancialTransactionsModule } from './financial-transactions/financial-transactions.module';
+import { FinancialReportsModule } from './financial-reports/financial-reports.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { FinancialTransactionsModule } from './financial-transactions/financial-
     FinancialCategoriesModule,
     FinancialAccountsModule,
     FinancialTransactionsModule,
+    FinancialReportsModule,
   ],
   controllers: [],
   providers: [],
