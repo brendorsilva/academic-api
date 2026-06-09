@@ -81,6 +81,23 @@ export class ClassDiaryService {
     return { message: 'Frequências atualizadas com sucesso!' };
   }
 
+  async remove(diaryId: string, user: any) {
+    const diary = await this.prisma.classDiary.findUnique({
+      where: { id: diaryId },
+    });
+
+    if (!diary || diary.institutionId !== user.institutionId) {
+      throw new NotFoundException('Diário de classe não encontrado.');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.attendance.deleteMany({ where: { classDiaryId: diaryId } }),
+      this.prisma.classDiary.delete({ where: { id: diaryId } }),
+    ]);
+
+    return { message: 'Diário e frequências excluídos com sucesso.' };
+  }
+
   async findByClassSubject(classSubjectId: string, user: any) {
     return this.prisma.classDiary.findMany({
       where: {

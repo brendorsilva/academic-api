@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Patch,
+  Delete,
   UseGuards,
 } from '@nestjs/common';
 
@@ -45,5 +46,11 @@ export class ClassDiaryController {
     @CurrentUser() user: any,
   ) {
     return this.classDiariesService.findByClassSubject(classSubjectId, user);
+  }
+
+  @Delete(':id')
+  @Roles(Role.ADMIN, Role.COORDINATOR, Role.TEACHER)
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.classDiariesService.remove(id, user);
   }
 }
