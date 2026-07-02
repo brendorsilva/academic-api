@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   UseGuards,
   Req,
   BadRequestException,
@@ -46,10 +47,16 @@ export class TeachersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Lista todos os professores da instituição' })
+  @ApiOperation({
+    summary:
+      'Lista os professores da instituição (filtro: status=active|inactive|all, padrão active)',
+  })
   @Roles(Role.ADMIN, Role.COORDINATOR)
-  findAll(@CurrentUser() user: any) {
-    return this.teachersService.findAll(user);
+  findAll(
+    @CurrentUser() user: any,
+    @Query('status') status?: 'active' | 'inactive' | 'all',
+  ) {
+    return this.teachersService.findAll(user, status);
   }
 
   @Get(':id')

@@ -35,7 +35,7 @@ export class TeachersService {
     });
   }
 
-  async findAll(currentUser: any) {
+  async findAll(currentUser: any, status: 'active' | 'inactive' | 'all' = 'active') {
     const whereClause: any = { institutionId: currentUser.institutionId };
 
     // if (
@@ -53,13 +53,17 @@ export class TeachersService {
     //   };
     // }
 
+    if (status !== 'all') {
+      whereClause.isActive = status === 'active';
+    }
+
     return this.prisma.teacher.findMany({
-      where: { ...whereClause, isActive: true },
+      where: whereClause,
       orderBy: { fullName: 'asc' },
     });
   }
 
-  async findOne(id: string, currentUser: any) {
+  async findOne(id: string, currentUser: any, includeInactive = false) {
     const whereClause: any = { id, institutionId: currentUser.institutionId };
 
     // if (
@@ -77,8 +81,12 @@ export class TeachersService {
     //   };
     // }
 
+    if (!includeInactive) {
+      whereClause.isActive = true;
+    }
+
     const teacher = await this.prisma.teacher.findFirst({
-      where: { ...whereClause, isActive: true },
+      where: whereClause,
     });
 
     if (!teacher) {
@@ -95,7 +103,8 @@ export class TeachersService {
     updateTeacherDto: UpdateTeacherDto,
     currentUser: any,
   ) {
-    await this.findOne(id, currentUser);
+    // includeInactive: permite reativar um professor inativo através do PATCH
+    await this.findOne(id, currentUser, true);
 
     return this.prisma.teacher.update({
       where: { id },
