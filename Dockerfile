@@ -1,35 +1,34 @@
-# Usando a versão Alpine para uma imagem mais leve (opcional, mas recomendado)
-FROM node:22-slim
+# ---------- Stage 1: build ----------
+FROM node:22-slim AS builder
 
-# Instalar dependências necessárias para o Prisma e PM2
-RUN apt-get update && apt-get install -y openssl libssl-dev && \
-    npm install -g pm2 && \
+RUN apt-get update && apt-get install -y --no-install-recommends openssl && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Contenção de rede: limita conexões paralelas e aumenta os retries
-RUN npm config set maxsockets 3 \
- && npm config set fetch-retries 5 \
- && npm config set fetch-retry-mintimeout 20000 \
- && npm config set fetch-retry-maxtimeout 120000
-
-# Copia arquivos de dependências
 COPY package*.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm ci
 
-# Copia a pasta do Prisma e gera o Client
 COPY prisma ./prisma/
 RUN npx prisma generate
 
-# Copia o restante do código
 COPY . .
-
-# Gera o build de produção
 RUN npm run build
+RUN npm prune --omit=dev
 
-# Expõe a porta que você definiu (6900)
+# ---------- Stage 2: runtime ----------
+FROM node:22-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends openssl && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/package.json ./
+
 EXPOSE 3000
-
-# Script de inicialização: roda as migrations e sobe com PM2
-CMD ["sh", "-c", "npx prisma migrate deploy && pm2-runtime dist/src/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]
