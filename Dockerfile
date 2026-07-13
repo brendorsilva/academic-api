@@ -8,11 +8,15 @@ RUN apt-get update && apt-get install -y openssl libssl-dev && \
 
 WORKDIR /app
 
+# Contenção de rede: limita conexões paralelas e aumenta os retries
+RUN npm config set maxsockets 3 \
+ && npm config set fetch-retries 5 \
+ && npm config set fetch-retry-mintimeout 20000 \
+ && npm config set fetch-retry-maxtimeout 120000
+
 # Copia arquivos de dependências
 COPY package*.json ./
-
-# Instala as dependências de produção e desenvolvimento (necessário para o build)
-RUN npm install
+RUN npm ci --no-audit --no-fund
 
 # Copia a pasta do Prisma e gera o Client
 COPY prisma ./prisma/
